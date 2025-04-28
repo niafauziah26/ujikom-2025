@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>To-Do-List NiaFauziah</title>
+  
+    <style>
+    body {
+
+      font-family: Arial, sans-serif;
+      background-color: lightblue;
+      color: darkblue;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    h1 {
+      color: darkblue;
+    }
+    
+    input,
+    select {
+      padding: 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+    }
+    
+    button {
+      padding: 10px 15px;
+      background-color: cyan;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background-color: lightblue;
+    }
+    
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    
+    li {
+      background-color: darkblue;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .status {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+
+<body>
+    <h1>To-Do-List🌷Niafzh</h1>
+
+  <input type="text" id="taskInput" placeholder="Tugas baru...">
+
+  <input type="date" id="dateInput">
+  
+  <select id="priorityInput" required>
+    <option value="kosong" disabled selected>pilih prooritas</option>
+    <option value="Tinggi">Tinggi⭐</option>
+    <option value="Sedang">Sedang💫</option>
+    <option value="Rendah">Rendah✨</option>
+    
+  </select>
+  
+  <button type="submit" class="btn btn-primary" id="tambah">Simpan</button>
+  <table id="taskList" style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th style="padding: 10px; border-bottom: 1px solid #fff;">Tugas</th>
+      <th style="padding: 10px; border-bottom: 1px solid #fff;">Prioritas</th>
+      <th style="padding: 10px; border-bottom: 1px solid #fff;">Status</th>
+      <th style="padding: 10px; border-bottom: 1px solid #fff;">Tanggal</th>
+      <th style="padding: 10px; border-bottom: 1px solid #fff;">Aksi</th>
+    </tr>
+  </thead>
+  <tbody id="taskBody">
+    <tr>
+      <td>Nama Tugas</td>
+      <td>Prioritas</td>
+      <td>
+        <select class="status">
+          <option value="Belum Dikerjakan">Belum Dikerjakan</option>
+          <option value="Selesai">Selesai</option>
+        </select>
+      </td>
+      <td>Tanggal</td>
+      <td>
+        <button onclick="editTask(this, 'docId')">Ubah</button>
+        <button onclick="deleteTask(this, 'docId')">Hapus</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style="color: darkblue; margin-top: 40px;">Tugas Selesai</h2>
+<table id="completedList" style="width: 100%; margin-top: 10px; border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th style="padding: 10px; border-bottom: 1px solid #fff;">Tugas</th>
+      <th style="padding: 10px; border-bottom: 1px solid #fff;">Prioritas</th>
+      <th style="padding: 10px; border-bottom: 1px solid #fff;">Status</th>
+      <th style="padding: 10px; border-bottom: 1px solid #fff;">Tanggal</th>
+      <th style="padding: 10px; border-bottom: 1px solid #fff;">Aksi</th>
+    </tr>
+  </thead>
+  <tbody id="completedBody"></tbody>
+</table>
+
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <script type="module">
+
+    import { tambahtodolist, ambildaftartodolist, hapustodolist, ubahtodolist } from './main.js';
+    
+    let editMode = false;
+    let editDocId = null;
+    
+    async function addTask() {
+  const taskInput = $('#taskInput').val();
+  const dateInput = $('#dateInput').val();
+  const priorityInput = $('#priorityInput').val();
+  
+  if (taskInput === '') {
+    alert('Masukkan tugas!');
+    return;
+  }
+  if (dateInput === '') {
+    alert('Masukkan tanggal!');
+    return;
+  }
+  if (!priorityInput) {
+    alert('Masukkan Prioritas!');
+    return;
+  }
+  
+  if (editMode) {
+    // Update existing task
+    await ubahtodolist(editDocId, taskInput, priorityInput, dateInput, false);
+  } else {
+    // Tambah tugas baru dengan status default: Belum Dikerjakan (false)
+    await tambahtodolist(taskInput, priorityInput, dateInput, false);
+  }
+  
+  tampilkanTodolist();
+  resetForm();
+
+}    
+    function editTask(button, docId) {
+  const row = $(button).closest('tr'); // Cari baris tabel terkait tombol
+  const nama = row.find('td:nth-child(1)').text(); // Ambil teks dari kolom pertama
+  const prioritas = row.find('td:nth-child(2)').text(); // Ambil teks dari kolom kedua
+  const tanggal = row.find('td:nth-child(4)').text(); // Ambil teks dari kolom keempat
+  const status = row.find('select.status').val(); // Ambil nilai dari dropdown status
+
+  if (!nama || !prioritas || !tanggal) {
+    alert('Data tugas tidak ditemukan atau tidak valid.');
+    return;
+  }
+
+  // Redirect ke halaman ubah dengan parameter
+  window.location.href = `ubah.html?docId=${docId}&nama=${nama}&prioritas=${prioritas}&tanggal=${tanggal}&status=${status}`;
+}
+    
+    async function updateStatus(select) {
+  const row = $(select).closest('tr');
+  const docId = row.data('id');
+  const status = $(select).val() === 'Selesai';
+  
+  const nama = row.find('td:nth-child(1)').text();
+  const prioritas = row.find('td:nth-child(2)').text();
+  const tanggalText = row.find('td:nth-child(4)').text();
+if (!tanggalText) {
+  alert("Tanggal tidak ditemukan pada baris ini.");
+  return;
+}
+const tanggal = tanggalText.split('/').reverse().join('-');
+  
+  try {
+    await ubahtodolist(docId, nama, prioritas, tanggal, status);
+    tampilkanTodolist(); // Refresh tampilan
+  } catch (error) {
+    console.error('Error updating status:', error);
+    alert('Gagal memperbarui status. Pastikan ID dokumen benar dan ada di database.');
+  }
+}
+    function resetForm() {
+      $('#taskInput').val('');
+      $('#dateInput').val('');
+      $('#priorityInput').val('Tinggi');
+      
+      editMode = false;
+      editDocId = null;
+    }
+    
+ async function tampilkanTodolist() {
+
+  const todolist = await ambildaftartodolist();
+
+  
+  const taskBody = $('#taskBody');
+  const completedBody = $('#completedBody');
+  taskBody.empty();
+  completedBody.empty();
+  
+  todolist.forEach(item => {
+    const tr = $('<tr></tr>').css('background-color', '#003366').css('color', '#fff');
+    tr.data('id', item.id);
+    
+    const tdNama = $('<td></td>').text(item.nama).css('padding', '10px');
+    const tdPrioritas = $('<td></td>').text(item.prioritas).css('padding', '10px');
+    const tdStatus = $('<td></td>').css('padding', '10px');
+    const tdTanggal = $('<td></td>').text(item.tanggal).css('padding', '10px');
+    const tdAksi = $('<td></td>').css('padding', '10px');
+    
+    const select = $('<select></select>').addClass('status');
+    select.append($('<option></option>').val('Belum Dikerjakan').text('Belum Dikerjakan'));
+    select.append($('<option></option>').val('Selesai').text('Selesai'));
+    select.val(item.status ? 'Selesai' : 'Belum Dikerjakan'); // set default
+    select.on('change', function() {
+      updateStatus(this);
+    });
+    tdStatus.append(select);
+    
+    const editButton = $('<button></button>').text('Ubah').attr('onclick', `editTask(this, '${item.id}')`);
+    const deleteButton = $('<button></button>').text('Hapus').attr('onclick', `deleteTask(this, '${item.id}')`);
+    tdAksi.append(editButton, deleteButton);
+    
+    tr.append(tdNama, tdPrioritas, tdStatus, tdTanggal, tdAksi);
+    
+    if (item.status) {
+      completedBody.append(tr);
+    } else {
+      taskBody.append(tr);
+    }
+  });
+}
+   
+       window.deleteTask = async function(button, docId) {
+      if (confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
+        try {
+          await hapustodolist(docId);
+          tampilkanTodolist(); // Memperbarui tampilan setelah menghapus tugas
+        } catch (error) {
+          console.error('Gagal menghapus tugas:', error);
+        }
+      }
+    };
+    
+    window.onload = tampilkanTodolist;
+    
+    $('#tambah').on('click', function(e) {
+      e.preventDefault();
+      addTask();
+    });
+    
+    window.editTask = editTask;
+    window.addTask = addTask;
+    window.updateStatus = updateStatus;
+    window.resetForm = resetForm;
+    window.tampilkanTodolist = tampilkanTodolist;
+  </script> 
+ 
+</body>
+
+</html>
